@@ -8,7 +8,7 @@ import org.apache.commons.io._
 
 import scala.collection.immutable._
 
-class Type(json: JsValue) {
+class Type(val json: JsValue) {
   val name = (json \ "name").asOpt[String]
   val tag = (json \ "tag").asOpt[String]
   val args = (json \ "args").asOpt[JsArray]
@@ -19,7 +19,7 @@ class Type(json: JsValue) {
   // TODO: "extension", "fields"
 }
 
-class Value(json: JsValue) {
+class Value(val json: JsValue) {
   val name = (json \ "name").as[String]
   val comment = (json \ "comment").asOpt[String]
   val associativity = (json \ "associativity").asOpt[String]
@@ -28,7 +28,7 @@ class Value(json: JsValue) {
   val valueType = new Type(json \ "raw")
 }
 
-class Datatype(json: JsValue) {
+class Datatype(val json: JsValue) {
   val name = (json \ "name").as[String]
   val comment = (json \ "comment").as[String]
   val raw = (json \ "raw").as[String]
@@ -37,7 +37,7 @@ class Datatype(json: JsValue) {
   // TODO: "constructors"
 }
 
-class Library(json: JsValue) {
+class Library(val json: JsValue) {
   val name = (json \ "name").as[String]
   val document = (json \ "document").as[String]
   val datatypes = (json \ "datatypes").as[JsArray].value.map { new Datatype(_) }
