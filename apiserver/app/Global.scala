@@ -1,5 +1,7 @@
 import play.api._
 
+import views._
+
 object Global extends GlobalSettings {
 
   override def onStart(app: Application) {

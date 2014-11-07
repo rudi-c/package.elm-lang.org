@@ -4,6 +4,7 @@
 
 # Home page
 GET     /                           controllers.Application.index
+GET     /reload                     controllers.SearchEngine.reload
 GET     /list                       controllers.SearchEngine.listLibraries
 GET     /get/:name                  controllers.SearchEngine.getLibraryByName(name : String)
 GET     /search/:query              controllers.SearchEngine.searchLibraries(query : String)
