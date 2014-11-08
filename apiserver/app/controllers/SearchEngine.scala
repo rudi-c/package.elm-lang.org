@@ -1,6 +1,7 @@
 package controllers
 
 import play.api._
+import play.api.libs.json._
 import play.api.mvc._
 
 import views._
@@ -13,8 +14,12 @@ object SearchEngine extends Controller {
   }
 
   def listLibraries = Action {
-    val libs = Documentation.libraries.keys mkString("\n")
-    Ok(libs)
+    val libs = Documentation.libraries.keys
+    .map(JsString)
+    .toSeq
+
+    // TODO: Should the results be sorted?
+    Ok(Json.stringify(JsArray(libs)))
   }
 
   def getLibraryByName(name : String) = Action {
@@ -22,6 +27,7 @@ object SearchEngine extends Controller {
       case Some(library) => library.json.toString
       case None => "Error no library found."
     }
+
     Ok(json)
   }
 
@@ -34,9 +40,14 @@ object SearchEngine extends Controller {
       (library.name, matches)
     } .filter { case (libraryName, matches) =>
       isSubsequence(query)(libraryName) || matches.length > 0
-    }
+    } .map { case (libraryName, matches) =>
+      JsObject(Seq(
+        ("library_name", JsString(libraryName)),
+        ("matches", JsArray(matches.map { m => JsString(m) }))
+        ))
+    } .toSeq
 
-    Ok(results mkString "\n")
+    Ok(Json.stringify(JsArray(results)))
   }
 
   def isSubsequence(query: String) (sequence: String): Boolean = {
