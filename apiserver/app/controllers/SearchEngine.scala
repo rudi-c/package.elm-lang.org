@@ -41,10 +41,10 @@ object SearchEngine extends Controller {
     } .filter { case (libraryName, matches) =>
       isSubsequence(query)(libraryName) || matches.length > 0
     } .map { case (libraryName, matches) =>
-      JsObject(Seq(
-        ("library_name", JsString(libraryName)),
-        ("matches", JsArray(matches.map { m => JsString(m) }))
-        ))
+      Json.obj(
+        "library_name" -> libraryName,
+        "matches" -> JsArray(matches.map { m => JsString(m) })
+      )
     } .toSeq
 
     Ok(Json.stringify(JsArray(results)))
