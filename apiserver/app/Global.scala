@@ -6,7 +6,7 @@ object Global extends GlobalSettings {
 
   override def onStart(app: Application) {
     Logger.info("Elm API Server has started.")
-    Documentation.initFromFile()
+    Documentation.init()
   }
 
   override def onStop(app: Application) {

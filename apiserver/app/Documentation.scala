@@ -37,7 +37,7 @@ class Datatype(val json: JsValue) {
   // TODO: "constructors"
 }
 
-class Library(val json: JsValue) {
+class Module(val json: JsValue) {
   val name = (json \ "name").as[String]
   val document = (json \ "document").as[String]
   val datatypes = (json \ "datatypes").as[JsArray].value.map { new Datatype(_) }
@@ -48,16 +48,40 @@ class Library(val json: JsValue) {
 
 object Documentation {
   val docsFile = "docs/sampledocs.json"
-  var libraries = TreeMap[String, Library]()
+  var packages = TreeMap[String, TreeMap[String, TreeMap[String, Module]]]()
 
-  def initFromFile() {
-    Play.resourceAsStream(docsFile) foreach { inputStream =>
-      val docs = IOUtils.toString(inputStream, "UTF-8");
-      val json = Json.parse(docs)
-      val libList = json.as[JsArray].value
-        .map { new Library(_) }
-        .map { library => (library.name, library) }
-      libraries = TreeMap(libList : _*)
-    }
+  def init() {
+    val packagesList = Play.getFile("docs/").listFiles
+      .filter { _.isDirectory }
+      .map { file =>
+        val packageName = file.getName()
+        val versionsList = file.listFiles
+          .filter { _.isDirectory }
+          .map { file =>
+            val version = file.getName()
+            val module = if (file.isDirectory && file.listFiles.size == 1 &&
+                             file.listFiles.head.getName() == "docs.json") {
+              Some(initFromFile("docs/" + packageName + "/" + version + "/docs.json"))
+            } else {
+              println("Warning : Expected a single file, docs.json. Directory ignored.")
+              None
+            }
+            module map { (version, _) }
+          }
+          .flatten // get rid of options
+        (packageName, TreeMap(versionsList : _*))
+      }
+    packages = TreeMap(packagesList : _*)
+  }
+
+  def initFromFile(docsFilePath: String): TreeMap[String, Module] = {
+    val file = Play.getFile(docsFilePath)
+    val lines = scala.io.Source.fromFile(file).mkString
+
+    val json = Json.parse(lines)
+    val libList = json.as[JsArray].value
+      .map { new Module(_) }
+      .map { library => (library.name, library) }
+    TreeMap(libList : _*)
   }
 }

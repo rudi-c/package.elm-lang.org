@@ -5,9 +5,12 @@
 # Home page
 GET     /                           controllers.Application.index
 GET     /reload                     controllers.SearchEngine.reload
-GET     /list                       controllers.SearchEngine.listLibraries
-GET     /get/:name                  controllers.SearchEngine.getLibraryByName(name : String)
-GET     /search/:query              controllers.SearchEngine.searchLibraries(query : String)
+GET     /list                       controllers.SearchEngine.listPackages
+GET     /list/:package              controllers.SearchEngine.listVersions(package: String)
+GET     /list/:package/:version     controllers.SearchEngine.listModules(package: String, version: String)
+GET     /get/:package/:version/:module  controllers.SearchEngine.getModule(package: String, version: String, module: String)
+
+GET     /search/:package/:query     controllers.SearchEngine.searchLibraries(package: String, query: String, version: Option[String], module: Option[String])
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
