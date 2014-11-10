@@ -51,7 +51,7 @@ object Documentation {
   var packages = TreeMap[String, TreeMap[String, TreeMap[String, Module]]]()
 
   def init() {
-    val packagesList = Play.getFile("docs/").listFiles
+    val packagesList = Play.getFile("conf/docs/").listFiles
       .filter { _.isDirectory }
       .map { file =>
         val packageName = file.getName()
@@ -61,7 +61,7 @@ object Documentation {
             val version = file.getName()
             val module = if (file.isDirectory && file.listFiles.size == 1 &&
                              file.listFiles.head.getName() == "docs.json") {
-              Some(initFromFile("docs/" + packageName + "/" + version + "/docs.json"))
+              Some(initFromFile("conf/docs/" + packageName + "/" + version + "/docs.json"))
             } else {
               println("Warning : Expected a single file, docs.json. Directory ignored.")
               None
