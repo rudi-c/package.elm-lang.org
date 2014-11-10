@@ -13,3 +13,5 @@ libraryDependencies ++= Seq(
   cache,
   ws
 )
+
+javaOptions ++= Seq("-Xms128M", "-Xmx128",  "-XX:+CMSClassUnloadingEnabled")
