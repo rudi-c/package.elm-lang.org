@@ -68,6 +68,12 @@ object SearchEngine extends Controller {
   def searchLibraries(elmPackage : String, query: String,
                       version: Option[String],
                       module_name: Option[String]) = Action {
+    def jsonBoldRanges(name: String): JsArray = {
+      JsArray(subsequence(query)(name)
+                .map { range => JsArray(range.map { n => JsNumber(n) }) }
+      )
+    }
+
     Documentation.packages.get(elmPackage)
       .flatMap { versions => version match {
           case Some(v) => versions.get(v)
@@ -91,7 +97,13 @@ object SearchEngine extends Controller {
           .map { case (moduleName, matches) =>
             Json.obj(
               "module_name" -> moduleName,
-              "matches" -> JsArray(matches.map { m => JsString(m) })
+              "matches" -> JsArray(matches.map { name =>
+                Json.obj(
+                  "name" -> name,
+                  "boldRanges" -> jsonBoldRanges(name)
+                  )
+                }),
+              "boldRanges" -> jsonBoldRanges(moduleName)
               )
           }
           .toSeq
@@ -110,5 +122,35 @@ object SearchEngine extends Controller {
       }
     }
     helper(query.toList, sequence.toList)
+  }
+
+  def subsequence(query: String) (sequence: String): List[Seq[Int]] = {
+    def matchingChars(query: List[Char], sequence: List[Char]): List[Boolean] = {
+      (query, sequence) match {
+        case (Nil, _) => List.fill(sequence.length)(false)
+        case (_, Nil) => Nil
+        case (x::xs, y::ys) if x == y => true :: matchingChars(xs, ys)
+        case (xs, y::ys) => false :: matchingChars(xs, ys)
+      }
+    }
+
+    def trueRanges(ranges: List[(Int, Int)], elem: (Boolean, Int)): List[(Int, Int)] = elem match {
+      case (value, index) =>
+        (ranges, value) match {
+          case ((start, end) :: rst, true) if end == index - 1 =>
+            // Extend range
+            (start, index) :: rst
+          case (_, true) =>
+            // New range
+            (index, index) :: ranges
+          case _ => ranges
+        }
+    }
+
+    matchingChars(query.toList, sequence.toList)
+      .zipWithIndex
+      .foldLeft(List.empty[(Int, Int)])(trueRanges)
+      .reverse
+      .map { case (start, end) => Seq(start, end) }
   }
 }
