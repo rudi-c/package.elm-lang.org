@@ -12,5 +12,7 @@ GET     /get/:package/:version/:module  controllers.SearchEngine.getModule(packa
 
 GET     /search/:package/:query     controllers.SearchEngine.searchLibraries(package: String, query: String, version: Option[String], module: Option[String])
 
+OPTIONS  /*all  controllers.SearchEngine.preflight(all: String)
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

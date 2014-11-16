@@ -15,6 +15,15 @@ object SearchEngine extends Controller {
     Ok("Reloaded.")
   }
 
+  // See http://empirewindrush.com/tech/2013/12/17/cors-and-play.html
+  def preflight(all: String) = Action {
+    Ok("").withHeaders("Access-Control-Allow-Origin" -> "*",
+      "Allow" -> "*",
+      "Access-Control-Allow-Methods" -> "POST, GET",
+      "Access-Control-Allow-Headers" ->
+        "Origin, X-Requested-With, Content-Type, Accept, Referer, User-Agent");
+  }
+
   def listPackages = Action {
     val jsPackages = Documentation.packages.keys
       .map(JsString)
