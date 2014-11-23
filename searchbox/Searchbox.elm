@@ -1,19 +1,27 @@
 module Searchbox where
 
+import List
+import List (..)
+import Graphics.Element (..)
 import Graphics.Input as Input
-import Html (Html, CssProperty, style, prop, text, on, getValue, toElement)
-import Html.Tags
-import Html.Tags (div, input, span, strong, ul, li)
+import Html
+import Html.Events
+import Html (Html, Attribute, toElement)
 import Html.Attributes (..)
 import Http
 import Json.Decode as Json
 import Json.Decode ((:=))
+import Signal
+import Signal (..)
 import String
+import Text
+--import VirtualDom (toElement)
 
-data Event = SearchBoxTyped String | SearchResultArrived (Http.Response String)
+type Event = SearchBoxTyped String | SearchResultArrived (Http.Response String)
 
-type ItemMatch = { item : String, boldRanges : [(Int, Int)] }
-type ModuleMatch = { moduleName : String, boldRanges : [(Int, Int)], matches : [ItemMatch] }
+type alias ItemMatch = { item : String, boldRanges : List (Int, Int) }
+type alias ModuleMatch = { moduleName : String, boldRanges : List (Int, Int),
+                           matches : List ItemMatch }
 
 searchUrl : String -> String
 searchUrl query = "http://rudichen.me:9000/search/elm-lang-Elm/" ++ query ++ "?version=0.13"
@@ -27,11 +35,11 @@ scene state =
             Just result -> [ searchResults state.query result ]
             Nothing -> []
     in
-        div [] ([ text state.query, stringInput state.query ] ++ dropdown)
+        Html.div [] ([ Html.text state.query, stringInput state.query ] ++ dropdown)
         |> toElement 400 200
 
 -- Hardcoded for now
-search : String -> [ModuleMatch]
+search : String -> List ModuleMatch
 search query = [ { moduleName = "Array", boldRanges = [],
                    matches = [{ item = "filter", boldRanges = [(0,0), (2,3), (5,5)] }]
                  },
@@ -42,120 +50,124 @@ search query = [ { moduleName = "Array", boldRanges = [],
                  }
                ]
 
-boldedTextHelper : String -> [(Int, Int)] -> Int -> [Html]
+boldedTextHelper : String -> List (Int, Int) -> Int -> List Html
 boldedTextHelper string boldRanges currentIndex =
     case boldRanges of
         [] ->
             if currentIndex == (String.length string) then
                 []
             else
-                [String.dropLeft currentIndex string |> text]
+                [String.dropLeft currentIndex string |> Html.text]
         (start, end) :: tail ->
             if currentIndex < start then
-                let nonbold = (String.slice currentIndex start string |> text)
+                let nonbold = (String.slice currentIndex start string |> Html.text)
                     rest = boldedTextHelper string boldRanges start
                 in  nonbold :: rest
             else
                 -- The ranges in boldRanges are inclusive ranges, whereas String.slice
                 -- takes an exclusive range, so use (end + 1).
-                let bold = strong [] [String.slice start (end + 1) string |> text]
+                let slice = String.slice start (end + 1) string
+                    bold = Html.strong [] [ Html.text slice ]
                     rest = boldedTextHelper string tail (end + 1)
                 in bold :: rest
 
-boldedText : String -> [(Int, Int)] -> Html
+boldedText : String -> List (Int, Int) -> Html
 boldedText string boldRanges =
     -- Span to "concatenate" the pieces of the string
-    span [] (boldedTextHelper string boldRanges 0)
+    Html.span [] (boldedTextHelper string boldRanges 0)
 
-boldedItems : ModuleMatch -> [Html]
+boldedItems : ModuleMatch -> List Html
 boldedItems match =
     let boldedItem item =
         let relativeLink = match.moduleName ++ "#" ++ item.item
         -- block style needed to make entire blocks clickable
         in
-            Html.Tags.a [ href relativeLink, style displayBlockStyle ]
-                        [ boldedText item.item item.boldRanges ]
+            Html.a [ href relativeLink, displayBlockStyle ]
+                   [ boldedText item.item item.boldRanges ]
     in
         -- ui-menu-item is to tag something as clickable
-        (map (\ match -> li [ style listItem2Style ] [boldedItem match])
+        (List.map (\ match -> Html.li [ listItem2Style ] [boldedItem match])
              match.matches)
 
-searchResult : String -> ModuleMatch -> [Html]
+searchResult : String -> ModuleMatch -> List Html
 searchResult query match =
     let mainText =
-            Html.Tags.a [ href match.moduleName, style displayBlockStyle ]
+            Html.a [ href match.moduleName, displayBlockStyle ]
                         [ boldedText match.moduleName match.boldRanges ]
-        main = li [ style listItemStyle] [ mainText ]
+        main = Html.li [ listItemStyle] [ mainText ]
         rest = boldedItems match
     in
         main :: rest
 
-searchResults : String -> [ModuleMatch] -> Html
+searchResults : String -> List ModuleMatch -> Html
 searchResults query matches =
-    ul [ style listStyle ]
-       (matches |> map (searchResult query) |> concat)
+    Html.ul [ listStyle ]
+       (matches |> List.map (searchResult query) |> concat)
 
 
 stringInput : String -> Html
 stringInput string =
-    input
+    Html.input
         [ placeholder "Text to reverse"
         , value string
-        , on "input" getValue searchbox.handle identity
-        , style myStyle
+        , Html.Events.on "input" Html.Events.value (send searchbox)
+        , myStyle
         ]
         []
 
-displayBlockStyle : [CssProperty]
-displayBlockStyle = [ prop "display" "block" ]
+displayBlockStyle : Attribute
+displayBlockStyle = style [ ("display", "block") ]
 
-listStyle : [CssProperty]
+listStyle : Attribute
 listStyle =
-    [ prop "position" "absolute",
-      prop "background" "#ffffff",
-      prop "z-index" "99999",
-      prop "tabindex" "0",
-      prop "top" "100px",
-      prop "left" "20px",
-      prop "width" "400px"
+    style [
+        ("position", "absolute"),
+        ("background", "#ffffff"),
+        ("z-index", "99999"),
+        ("tabindex", "0"),
+        ("top", "100px"),
+        ("left", "20px"),
+        ("width", "400px")
     ]
 
-listItemStyle : [CssProperty]
+listItemStyle : Attribute
 listItemStyle =
-    [ prop "display" "block",
-      prop "padding" "4px 7px",
-      prop "margin" "0",
-      prop "border" "1px solid #181818",
-      prop "border-top" "none",
-      prop "color" "#222222",
-      prop "font-family" "Helvetica",
-      prop "letter-spacing" "0",
-      prop "line-height" "100%",
-      prop "cursor" "pointer"
-      --prop "onclick" "location.href = 'google.com'"
+    style [
+        ("display", "block"),
+        ("padding", "4px 7px"),
+        ("margin", "0"),
+        ("border", "1px solid #181818"),
+        ("border-top", "none"),
+        ("color", "#222222"),
+        ("font-family", "Helvetica"),
+        ("letter-spacing", "0"),
+        ("line-height", "100%"),
+        ("cursor", "pointer")
     ]
 
-listItem2Style : [CssProperty]
+listItem2Style : Attribute
 listItem2Style =
-    [ prop "display" "block",
-      prop "padding" "4px 25px",
-      prop "margin" "0",
-      prop "border" "1px solid #181818",
-      prop "border-top" "none",
-      prop "color" "#222222",
-      prop "font-family" "monospace",
-      prop "letter-spacing" "0",
-      prop "line-height" "100%",
-      prop "cursor" "pointer"
+    style [
+        ("display", "block"),
+        ("padding", "4px 25px"),
+        ("margin", "0"),
+        ("border", "1px solid #181818"),
+        ("border-top", "none"),
+        ("color", "#222222"),
+        ("font-family", "monospace"),
+        ("letter-spacing", "0"),
+        ("line-height", "100%"),
+        ("cursor", "pointer")
     ]
 
-myStyle : [CssProperty]
+myStyle : Attribute
 myStyle =
-    [ prop "width" "100%"
-    , prop "height" "40px"
-    , prop "padding" "10px 0"
-    , prop "font-size" "2em"
-    , prop "text-align" "center"
+    style [
+      ("width", "100%")
+    , ("height", "40px")
+    , ("padding", "10px 0")
+    , ("font-size", "2em")
+    , ("text-align", "center")
     ]
 
 responseDecoder : Json.Decoder ModuleMatch
@@ -179,13 +191,13 @@ responseDecoder =
 
 -- State
 
-type SearchState = { query: String, results: Maybe [ModuleMatch] }
+type alias SearchState = { query: String, results: Maybe (List ModuleMatch) }
 
 initialState = { query = "", results = Nothing }
 
 -- Update
 
-parseResults : Http.Response String -> Maybe [ModuleMatch]
+parseResults : Http.Response String -> Maybe (List ModuleMatch)
 parseResults response =
     case response of
         Http.Success result -> Just (search "")
@@ -202,11 +214,14 @@ update event state =
 
 main : Signal Element
 main =
-    let responses = Http.sendGet (searchUrl <~ searchbox.signal)
-        events = merge (SearchBoxTyped <~ searchbox.signal)
+    let responses = Http.sendGet (searchUrl <~ searchSignal)
+        events = merge (SearchBoxTyped <~ searchSignal)
                        (SearchResultArrived <~ responses)
     in
         scene <~ foldp update initialState events
 
-searchbox : Input.Input String
-searchbox = Input.input ""
+searchbox : Channel String
+searchbox = channel ""
+
+searchSignal : Signal String
+searchSignal = subscribe searchbox
