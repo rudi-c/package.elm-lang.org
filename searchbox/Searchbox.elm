@@ -9,6 +9,7 @@ import Html.Events
 import Html (Html, Attribute, toElement)
 import Html.Attributes (..)
 import Http
+import Http (Request)
 import Json.Decode as Json
 import Json.Decode ((:=))
 import Signal
@@ -17,14 +18,21 @@ import String
 import Text
 --import VirtualDom (toElement)
 
-type Event = SearchBoxTyped String | SearchResultArrived (Http.Response String)
+type Event = SearchBoxNone
+             | SearchBoxTyped String
+             | SearchResultArrived (Http.Response String)
 
 type alias ItemMatch = { item : String, boldRanges : List (Int, Int) }
 type alias ModuleMatch = { moduleName : String, boldRanges : List (Int, Int),
                            matches : List ItemMatch }
 
-searchUrl : String -> String
-searchUrl query = "http://rudichen.me:9000/search/elm-lang-Elm/" ++ query ++ "?version=0.13"
+searchRequest : String -> Request String
+searchRequest query =
+    if String.isEmpty query then
+        -- Request won't get sent with nil HTTP.
+        Http.get ""
+    else
+        Http.get <| "http://rudichen.me:9000/search/elm-lang-Elm/" ++ query ++ "?version=0.13"
 
 -- VIEW
 
@@ -110,7 +118,7 @@ stringInput string =
     Html.input
         [ placeholder "Text to reverse"
         , value string
-        , Html.Events.on "input" Html.Events.value (send searchbox)
+        , Html.Events.on "input" Html.Events.targetValue (send searchbox)
         , myStyle
         ]
         []
@@ -202,11 +210,14 @@ parseResults response =
     case response of
         Http.Success result -> Just (search "")
         Http.Waiting -> Just [{ moduleName = "Waiting", boldRanges = [], matches = [] }]
-        Http.Failure _ _ -> Just [{ moduleName = "Failure", boldRanges = [], matches = [] }]
+        Http.Failure code msg -> Just [{ moduleName = "Failure: " ++ msg,
+                                         boldRanges = [], matches = [] }
+                                      ]
 
 update : Event -> SearchState -> SearchState
 update event state =
     case event of
+        SearchBoxNone -> state
         SearchBoxTyped text -> { state | query <- text }
         SearchResultArrived results -> { state | results <- parseResults results }
 
@@ -214,9 +225,11 @@ update event state =
 
 main : Signal Element
 main =
-    let responses = Http.sendGet (searchUrl <~ searchSignal)
-        events = merge (SearchBoxTyped <~ searchSignal)
-                       (SearchResultArrived <~ responses)
+    let responses = Http.send (searchRequest <~ searchSignal)
+        events = mergeMany [ constant SearchBoxNone
+                           , SearchBoxTyped <~ searchSignal
+                           , SearchResultArrived <~ responses
+                           ]
     in
         scene <~ foldp update initialState events
 
