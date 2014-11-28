@@ -1,5 +1,6 @@
 module Searchbox where
 
+import Debug
 import List
 import List (..)
 import Graphics.Element (..)
@@ -178,23 +179,26 @@ myStyle =
     , ("text-align", "center")
     ]
 
-responseDecoder : Json.Decoder ModuleMatch
+responseDecoder : Json.Decoder (List ModuleMatch)
 responseDecoder =
     let rangeDecoder = Json.map (\ range -> (head range, head (tail range)))
                                 (Json.list Json.int)
         rangesDecoder = Json.list rangeDecoder
-        matchDecoder = Json.object2
-                            (\ name ranges -> { item = name, boldRanges = ranges })
-                            ("name" := Json.string)
-                            ("boldRanges" := rangesDecoder)
+        matchDecoder =
+            Json.object2
+                (\ name ranges -> { item = name, boldRanges = ranges })
+                ("name" := Json.string)
+                ("boldRanges" := rangesDecoder)
         matchesDecoder = Json.list matchDecoder
+        modulesDecoder =
+            Json.object3
+                (\ name matches boldRanges ->
+                    { moduleName = name, matches = matches, boldRanges = boldRanges })
+                ("module_name" := Json.string)
+                ("matches" := matchesDecoder)
+                ("boldRanges" := rangesDecoder)
     in
-        Json.object3
-            (\ name matches boldRanges ->
-                { moduleName = name, matches = matches, boldRanges = boldRanges })
-            ("module_name" := Json.string)
-            ("matches" := matchesDecoder)
-            ("bold_ranges" := rangesDecoder)
+        Json.list modulesDecoder
 
 
 -- State
@@ -208,7 +212,10 @@ initialState = { query = "", results = Nothing }
 parseResults : Http.Response String -> Maybe (List ModuleMatch)
 parseResults response =
     case response of
-        Http.Success result -> Just (search "")
+        Http.Success result ->
+            case Json.decodeString responseDecoder result of
+                Ok value -> Just value
+                Err error -> Debug.log error Nothing
         Http.Waiting -> Just [{ moduleName = "Waiting", boldRanges = [], matches = [] }]
         Http.Failure code msg -> Just [{ moduleName = "Failure: " ++ msg,
                                          boldRanges = [], matches = [] }
