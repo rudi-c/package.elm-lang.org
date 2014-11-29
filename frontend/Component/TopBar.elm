@@ -6,6 +6,7 @@ import Graphics.Element (..)
 import Signal
 import Text
 
+import Component.SearchBar
 
 type SearchScope
     = Package String
