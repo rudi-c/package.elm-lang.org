@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ServeFile where
 
+import Control.Monad.Trans (liftIO)
+import qualified Data.List as List
 import qualified Data.Text.Lazy as Text
 import Snap.Core (Snap, writeBuilder)
 import Text.Blaze.Html5 as H
@@ -11,6 +13,7 @@ import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
 import qualified Elm.Compiler.Module as Module
 import qualified Elm.Package.Name as N
 import qualified Elm.Package.Version as V
+import qualified PackageSummary as PkgSummary
 import qualified Path
 
 
@@ -33,40 +36,69 @@ filler name =
 
 
 packageDocs :: N.Name -> V.Version -> Snap ()
-packageDocs (N.Name user name) version =
-    writeBuilder $
-    Blaze.renderHtmlBuilder $
-    docTypeHtml $ do 
-      H.head $ do
-        meta ! charset "UTF-8"
-        H.title (toHtml ("Elm Package Documentation" :: Text.Text))
-        H.style $ preEscapedToMarkup standardStyle
-        script ! src (toValue ("/artifacts/Page-PackageDocs.js" :: Text.Text)) $ ""
+packageDocs pkg@(N.Name user name) version =
+  do  maybeVersions <- liftIO (PkgSummary.readVersionsOf pkg)
+      let versionList =
+            maybe [] (List.map V.toString) maybeVersions
 
-      body $ script $ preEscapedToMarkup $
-          "\nvar context = { user: '" ++ user ++ "', name: '" ++ name ++ "', version: '" ++ V.toString version ++ "' }\n" ++
-          "var page = Elm.fullscreen(Elm.Page.PackageDocs, { context: context });\n"
+      writeBuilder $
+        Blaze.renderHtmlBuilder $
+        docTypeHtml $ do 
+          H.head $ do
+            meta ! charset "UTF-8"
+            H.title "Elm Package Documentation"
+            H.style $ preEscapedToMarkup standardStyle
+            script ! src "/artifacts/Page-PackageDocs.js" $ ""
 
-      analytics
+            link ! rel "stylesheet" ! href "/assets/highlight/styles/github.css"
+            script ! src "/assets/highlight/highlight.pack.js" $ ""
+
+          body $ script $ preEscapedToMarkup $
+              context
+                [ ("user", show user)
+                , ("name", show name)
+                , ("version", show (V.toString version))
+                , ("versionList", show versionList)
+                ]
+              ++ "var page = Elm.fullscreen(Elm.Page.PackageDocs, { context: context });\n"
+
+          analytics
 
 
 moduleDocs :: N.Name -> V.Version -> Module.Name -> Snap ()
-moduleDocs (N.Name user name) version moduleName =
-    writeBuilder $
-    Blaze.renderHtmlBuilder $
-    docTypeHtml $ do 
-      H.head $ do
-        meta ! charset "UTF-8"
-        H.title (toHtml ("Elm Package Documentation" :: Text.Text))
-        H.style $ preEscapedToMarkup standardStyle
-        script ! src (toValue ("/artifacts/Page-ModuleDocs.js" :: Text.Text)) $ ""
+moduleDocs pkg@(N.Name user name) version moduleName =
+  do  maybeVersions <- liftIO (PkgSummary.readVersionsOf pkg)
+      let versionList =
+            maybe [] (List.map V.toString) maybeVersions
 
-      body $ script $ preEscapedToMarkup $
-          "\nvar context = { user: '" ++ user ++ "', name: '" ++ name ++ "', " ++
-          "version: '" ++ V.toString version ++ "', moduleName: '" ++ Module.nameToString moduleName ++ "' }\n" ++
-          "var page = Elm.fullscreen(Elm.Page.ModuleDocs, { context: context });\n"
+      writeBuilder $
+        Blaze.renderHtmlBuilder $
+        docTypeHtml $ do 
+          H.head $ do
+            meta ! charset "UTF-8"
+            H.title "Elm Package Documentation"
+            H.style $ preEscapedToMarkup standardStyle
+            script ! src "/artifacts/Page-ModuleDocs.js" $ ""
 
-      analytics
+            link ! rel "stylesheet" ! href "/assets/highlight/styles/github.css"
+            script ! src "/assets/highlight/highlight.pack.js" $ ""
+
+          body $ script $ preEscapedToMarkup $
+              context
+                [ ("user", show user)
+                , ("name", show name)
+                , ("version", show (V.toString version))
+                , ("versionList", show versionList)
+                , ("moduleName", show (Module.nameToString moduleName))
+                ]
+              ++ "var page = Elm.fullscreen(Elm.Page.ModuleDocs, { context: context });\n"
+
+          analytics
+
+
+context :: [(String, String)] -> String
+context pairs =
+  "\nvar context = { " ++ List.intercalate ", " (List.map (\(k,v) -> k ++ ": " ++ v) pairs) ++ " };\n"
 
 
 standardStyle :: Text.Text
@@ -83,19 +115,14 @@ standardStyle =
     \  line-height: 1.5em !important;\n\
     \}\n\
     \pre {\n\
-    \  margin-left: 30px;\n\
-    \}\n\
-    \code > span.kw { color: #268BD2; }\n\
-    \code > span.dt { color: #268BD2; }\n\
-    \code > span.dv, code > span.bn, code > span.fl { color: #D33682; }\n\
-    \code > span.ch { color: #DC322F; }\n\
-    \code > span.st { color: #2AA198; }\n\
-    \code > span.co { color: #93A1A1; }\n\
-    \code > span.ot { color: #A57800; }\n\
-    \code > span.al { color: #CB4B16; font-weight: bold; }\n\
-    \code > span.fu { color: #268BD2; }\n\
-    \code > span.re { }\n\
-    \code > span.er { color: #D30102; font-weight: bold; }"
+    \  margin: 0;\n\
+    \  padding: 10px;\n\
+    \  background-color: rgb(254,254,254);\n\
+    \  border-style: solid;\n\
+    \  border-width: 1px;\n\
+    \  border-color: rgb(245,245,245);\n\
+    \  border-radius: 6px;\n\
+    \}\n"
 
 
 -- | Add analytics to a page.
