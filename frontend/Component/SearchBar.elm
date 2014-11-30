@@ -27,7 +27,9 @@ type Action = SearchBoxNone
 
 type alias State = { query: String, results: Maybe (List ModuleMatch) }
 
+initialState : State
 initialState = { query = "", results = Nothing }
+
 type alias ItemMatch = { item : String, boldRanges : List (Int, Int) }
 type alias ModuleMatch = { moduleName : String, boldRanges : List (Int, Int),
                            matches : List ItemMatch }

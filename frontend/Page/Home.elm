@@ -19,6 +19,9 @@ type Action = TopBar TopBar.Action
 
 type alias State = { topBar : TopBar.State }
 
+initialState : State
+initialState = { topBar = TopBar.initialState }
+
 step : Action -> State -> State
 step action state =
     case action of
@@ -32,7 +35,10 @@ actions = TopBar <~ TopBar.actions
 
 main : Signal.Signal Element
 main =
-    Signal.map2 scene Window.dimensions (Signal.constant [Packages.Package "elm-lang/core" "core libraries" ["1.0.0"]])
+    Signal.map3 scene
+                Window.dimensions
+                (Signal.constant [Packages.Package "elm-lang/core" "core libraries" ["1.0.0"]])
+                (foldp step initialState actions)
 
 
 search : Signal.Channel TopBar.Update
@@ -40,8 +46,8 @@ search =
     Signal.channel TopBar.NoOp
 
 
-scene : (Int,Int) -> List Packages.Package -> Element
-scene (windowWidth, windowHeight) packages =
+scene : (Int,Int) -> List Packages.Package -> State -> Element
+scene (windowWidth, windowHeight) packages state =
   let packageListing =
         Packages.view 980 packages
   in

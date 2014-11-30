@@ -12,6 +12,9 @@ type Action = SearchBar SearchBar.Action
 
 type alias State = { searchBar : SearchBar.State }
 
+initialState : State
+initialState = { searchBar = SearchBar.initialState }
+
 step : Action -> State -> State
 step action state =
     case action of
