@@ -53,8 +53,8 @@ logoSize = 28
 searchBarWidth = 100
 
 
-view : Int -> Channel Update -> Model -> Element
-view outerWidth channel model =
+view : Int -> State -> Element
+view outerWidth state =
   let leftPadding =
         (outerWidth - innerWidth) // 2
 
@@ -66,7 +66,8 @@ view outerWidth channel model =
   , bar topBarHeight
       (link "/" (image logoSize logoSize "/assets/elm_logo.svg"))
   , bar searchBarWidth (link "/packages" (Text.plainText "Packages"))
-  , bar (innerWidth - topBarHeight - searchBarWidth + rightPadding) empty
+  , bar (innerWidth - topBarHeight - searchBarWidth + rightPadding)
+        (SearchBar.view state.searchBar)
   ]
 
 

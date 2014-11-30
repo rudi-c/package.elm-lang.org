@@ -40,12 +40,6 @@ main =
                 (Signal.constant [Packages.Package "elm-lang/core" "core libraries" ["1.0.0"]])
                 (foldp step initialState actions)
 
-
-search : Signal.Channel TopBar.Update
-search =
-    Signal.channel TopBar.NoOp
-
-
 scene : (Int,Int) -> List Packages.Package -> State -> Element
 scene (windowWidth, windowHeight) packages state =
   let packageListing =
@@ -53,6 +47,6 @@ scene (windowWidth, windowHeight) packages state =
   in
   color C.background <|
   flow down
-  [ TopBar.view windowWidth search (TopBar.Model TopBar.Global "map" TopBar.Normal)
+  [ TopBar.view windowWidth state.topBar
   , container windowWidth (max windowHeight (heightOf packageListing)) midTop packageListing
   ]

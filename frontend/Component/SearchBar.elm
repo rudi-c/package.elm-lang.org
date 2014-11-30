@@ -44,8 +44,8 @@ searchRequest query =
 
 -- VIEW
 
-scene : State -> Element
-scene state =
+view : State -> Element
+view state =
     let dropdown =
         case state.results of
             Just result -> [ searchResults state.query result ]
@@ -240,9 +240,6 @@ actions =
                   ]
 
 -- SIGNALS
-
-main : Signal Element
-main = scene <~ foldp step initialState actions
 
 searchbox : Channel String
 searchbox = channel ""
