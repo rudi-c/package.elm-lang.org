@@ -19,10 +19,15 @@ import String
 import Text
 --import VirtualDom (toElement)
 
-type Event = SearchBoxNone
-             | SearchBoxTyped String
-             | SearchResultArrived (Http.Response String)
+type Action = SearchBoxNone
+            | SearchBoxTyped String
+            | SearchResultArrived (Http.Response String)
 
+-- State
+
+type alias State = { query: String, results: Maybe (List ModuleMatch) }
+
+initialState = { query = "", results = Nothing }
 type alias ItemMatch = { item : String, boldRanges : List (Int, Int) }
 type alias ModuleMatch = { moduleName : String, boldRanges : List (Int, Int),
                            matches : List ItemMatch }
@@ -37,7 +42,7 @@ searchRequest query =
 
 -- VIEW
 
-scene : SearchState -> Element
+scene : State -> Element
 scene state =
     let dropdown =
         case state.results of
@@ -201,11 +206,6 @@ responseDecoder =
         Json.list modulesDecoder
 
 
--- State
-
-type alias SearchState = { query: String, results: Maybe (List ModuleMatch) }
-
-initialState = { query = "", results = Nothing }
 
 -- Update
 
@@ -221,24 +221,26 @@ parseResults response =
                                          boldRanges = [], matches = [] }
                                       ]
 
-update : Event -> SearchState -> SearchState
-update event state =
+step : Action -> State -> State
+step event state =
     case event of
         SearchBoxNone -> state
         SearchBoxTyped text -> { state | query <- text }
         SearchResultArrived results -> { state | results <- parseResults results }
 
+actions : Signal Action
+actions =
+    let responses = Http.send (searchRequest <~ searchSignal)
+    in
+        mergeMany [ constant SearchBoxNone
+                  , SearchBoxTyped <~ searchSignal
+                  , SearchResultArrived <~ responses
+                  ]
+
 -- SIGNALS
 
 main : Signal Element
-main =
-    let responses = Http.send (searchRequest <~ searchSignal)
-        events = mergeMany [ constant SearchBoxNone
-                           , SearchBoxTyped <~ searchSignal
-                           , SearchResultArrived <~ responses
-                           ]
-    in
-        scene <~ foldp update initialState events
+main = scene <~ foldp step initialState actions
 
 searchbox : Channel String
 searchbox = channel ""

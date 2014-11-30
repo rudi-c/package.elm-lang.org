@@ -3,10 +3,22 @@ module Component.TopBar where
 import Color
 import ColorScheme as C
 import Graphics.Element (..)
-import Signal
+import Signal (..)
 import Text
 
-import Component.SearchBar
+import Component.SearchBar as SearchBar
+
+type Action = SearchBar SearchBar.Action
+
+type alias State = { searchBar : SearchBar.State }
+
+step : Action -> State -> State
+step action state =
+    case action of
+        SearchBar a -> { state | searchBar <- SearchBar.step a state.searchBar }
+
+actions : Signal Action
+actions = SearchBar <~ SearchBar.actions
 
 type SearchScope
     = Package String
@@ -38,7 +50,7 @@ logoSize = 28
 searchBarWidth = 100
 
 
-view : Int -> Signal.Channel Update -> Model -> Element
+view : Int -> Channel Update -> Model -> Element
 view outerWidth channel model =
   let leftPadding =
         (outerWidth - innerWidth) // 2
