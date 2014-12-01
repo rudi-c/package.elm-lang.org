@@ -36,9 +36,16 @@ view outerWidth = viewWithItem outerWidth empty
 viewWithSearchBar : Int -> Element -> Element
 viewWithSearchBar outerWidth searchBar = viewWithItem outerWidth searchBar
 
+
+searchBarLeft : Int -> Int
+searchBarLeft outerWidth =
+    let leftPadding = (outerWidth - innerWidth) // 2
+    in leftPadding + topBarHeight + searchBarWidth
+
+
 bar : Int -> Element -> Element
 bar fillerWidth elem =
   flow down
-  [ color C.lightGrey (container fillerWidth topBarHeight middle elem)
+  [ color C.lightGrey (container fillerWidth topBarHeight midLeft elem)
   , color C.mediumGrey (spacer fillerWidth 1)
   ]

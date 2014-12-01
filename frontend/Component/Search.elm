@@ -51,10 +51,11 @@ searchRequest query =
 searchBar : State -> Element
 searchBar state = Html.div [] [ stringInput state.query ] |> toElement 400 30
 
-dropdown : State -> Html
-dropdown state =
+dropdown : State -> (Int, Int) -> Html
+dropdown state (x, y) =
     case state.results of
-        Just result -> searchResults state.query result
+        Just result -> Html.div [ listStyle x y ]
+                                [ (searchResults state.query result) ]
         Nothing -> Html.div [] []
 
 
@@ -121,8 +122,7 @@ searchResult query match =
 
 searchResults : String -> List ModuleMatch -> Html
 searchResults query matches =
-    Html.ul [ listStyle ]
-       (matches |> List.map (searchResult query) |> concat)
+    Html.ul [ noPadding ] (matches |> List.map (searchResult query) |> concat)
 
 
 stringInput : String -> Html
@@ -138,16 +138,22 @@ stringInput string =
 displayBlockStyle : Attribute
 displayBlockStyle = style [ ("display", "block") ]
 
-listStyle : Attribute
-listStyle =
+makePx : Int -> String
+makePx int = toString int ++ "px"
+
+noPadding : Attribute
+noPadding = style [ ("padding", "0px"), ("margin", "0px") ]
+
+listStyle : Int -> Int -> Attribute
+listStyle x y =
     style [
         ("position", "absolute"),
         ("background", "#ffffff"),
-        ("z-index", "99999"),
+        ("z-index", "1001"),
         ("tabindex", "0"),
-        ("top", "100px"),
-        ("left", "20px"),
-        ("width", "400px")
+        ("left", makePx x),
+        ("top", makePx y),
+        ("width", "414px")
     ]
 
 listItemStyle : Attribute

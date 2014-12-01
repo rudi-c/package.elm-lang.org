@@ -36,7 +36,7 @@ view (windowWidth, windowHeight) packages searchState =
             ]
     in
         Html.div [] [ color C.background test |> Html.fromElement
-                    , Search.dropdown searchState
+                    , Search.dropdown searchState (TopBar.searchBarLeft windowWidth, 42)
                     ]
         |> Html.toElement windowWidth windowHeight
 
