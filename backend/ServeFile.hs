@@ -50,7 +50,7 @@ packageDocs pkg@(N.Name user name) version =
             H.style $ preEscapedToMarkup standardStyle
             script ! src "/artifacts/Page-PackageDocs.js" $ ""
 
-            link ! rel "stylesheet" ! href "/assets/highlight/styles/github.css"
+            link ! rel "stylesheet" ! href "/assets/highlight/styles/default.css"
             script ! src "/assets/highlight/highlight.pack.js" $ ""
 
           body $ script $ preEscapedToMarkup $
@@ -80,7 +80,7 @@ moduleDocs pkg@(N.Name user name) version moduleName =
             H.style $ preEscapedToMarkup standardStyle
             script ! src "/artifacts/Page-ModuleDocs.js" $ ""
 
-            link ! rel "stylesheet" ! href "/assets/highlight/styles/github.css"
+            link ! rel "stylesheet" ! href "/assets/highlight/styles/default.css"
             script ! src "/assets/highlight/highlight.pack.js" $ ""
 
           body $ script $ preEscapedToMarkup $
@@ -105,10 +105,14 @@ standardStyle :: Text.Text
 standardStyle = 
     "html,head,body { padding:0; margin:0; }\n\
     \body { font-family: 'Lucida Grande','Trebuchet MS','Bitstream Vera Sans',Verdana,Helvetica,sans-serif; }\n\
-    \a:link {text-decoration: none; color: rgb(15,102,230);}\n\
-    \a:visited {text-decoration: none; color: rgb(15,102,230);}\n\
-    \a:active {text-decoration: none}\n\
-    \a:hover { text-decoration: underline; color: rgb(234,21,122); }\n\
+    \a {\n\
+    \  color: #1184CE;\n\
+    \  text-decoration: none;\n\
+    \}\n\
+    \a:hover {\n\
+    \  text-decoration: underline;\n\
+    \  color: rgb(234,21,122);\n\
+    \}\n\
     \h1,h2,h3,h4 { font-weight:normal; font-family: futura, 'century gothic', 'twentieth century', calibri, verdana, helvetica, arial; }\n\
     \p, li {\n\
     \  font-size: 14px !important;\n\

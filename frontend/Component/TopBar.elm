@@ -16,7 +16,6 @@ logoSize = 28
 
 searchBarWidth = 100
 
-
 viewWithItem : Int -> Element -> Element
 viewWithItem outerWidth item =
     let leftPadding = (outerWidth - innerWidth) // 2
@@ -24,10 +23,10 @@ viewWithItem outerWidth item =
     in
         flow right
         [ bar leftPadding empty
-        , bar topBarHeight
+        , bar logoSize
             (link "/" (image logoSize logoSize "/assets/elm_logo.svg"))
-        , bar searchBarWidth (link "/packages" (Text.plainText "Packages"))
-        , bar (innerWidth - topBarHeight - searchBarWidth + rightPadding) item
+        , link "/packages" (bar searchBarWidth (Text.leftAligned (Text.color (Color.rgb 5 80 129) (Text.fromString "Packages"))))
+        , barLeft (innerWidth - logoSize - searchBarWidth + rightPadding) item
         ]
 
 view : Int -> Element
@@ -40,12 +39,13 @@ viewWithSearchBar outerWidth searchBar = viewWithItem outerWidth searchBar
 searchBarLeft : Int -> Int
 searchBarLeft outerWidth =
     let leftPadding = (outerWidth - innerWidth) // 2
-    in leftPadding + topBarHeight + searchBarWidth
+    in leftPadding + logoSize + searchBarWidth
 
 
 bar : Int -> Element -> Element
 bar fillerWidth elem =
-  flow down
-  [ color C.lightGrey (container fillerWidth topBarHeight midLeft elem)
-  , color C.mediumGrey (spacer fillerWidth 1)
-  ]
+  color C.blue (container fillerWidth topBarHeight middle elem)
+
+barLeft : Int -> Element -> Element
+barLeft fillerWidth elem =
+  color C.blue (container fillerWidth topBarHeight midLeft elem)

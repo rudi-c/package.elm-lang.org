@@ -12,6 +12,7 @@ import Signal
 import String
 import Window
 
+import Component.Search as Search
 import Component.TopBar as TopBar
 import Component.ModuleDocs as Docs
 import Component.Documentation as D
@@ -68,7 +69,7 @@ handleResult response =
 
 main : Signal Element
 main =
-    Signal.map3 view Window.dimensions documentation TopBar.topBar
+    Signal.map3 view Window.dimensions documentation Search.searchState
 
 
 versionChan : Signal.Channel String
@@ -82,11 +83,11 @@ port redirect =
     |> Signal.map (\v -> packageUrl v ++ "/" ++ moduleNameToUrl context.moduleName)
 
 
-view : (Int,Int) -> D.Documentation -> Element -> Element
-view (windowWidth, windowHeight) docs topBar =
+view : (Int,Int) -> D.Documentation -> Search.State -> Element
+view (windowWidth, windowHeight) docs searchState =
   color C.background <|
   flow down
-  [ topBar
+  [ TopBar.viewWithSearchBar windowWidth (Search.searchBar searchState)
   , flow right
     [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
     , Docs.view (LC.create identity versionChan) 980 context.user context.name context.version context.versionList docs
