@@ -3,6 +3,7 @@ module Page.Packages where
 import Color
 import ColorScheme as C
 import Graphics.Element (..)
+import Html
 import Http
 import Json.Decode as Json
 import Signal
@@ -25,14 +26,19 @@ main =
 
 view : (Int,Int) -> List Packages.Package -> Search.State -> Element
 view (windowWidth, windowHeight) packages searchState =
-  color C.background <|
-  flow down
-  [ TopBar.viewWithSearchBar windowWidth (Search.searchBar searchState)
-  , flow right
-    [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
-    , Packages.view 980 packages
-    ]
-  ]
+    let test =
+        flow down
+            [ TopBar.viewWithSearchBar windowWidth (Search.searchBar searchState)
+            , flow right
+              [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
+              , Packages.view 980 packages
+              ]
+            ]
+    in
+        Html.div [] [ color C.background test |> Html.fromElement
+                    , Search.dropdown searchState
+                    ]
+        |> Html.toElement windowWidth windowHeight
 
 
 allPackagesUrl : String

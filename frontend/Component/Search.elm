@@ -51,11 +51,11 @@ searchRequest query =
 searchBar : State -> Element
 searchBar state = Html.div [] [ stringInput state.query ] |> toElement 400 30
 
-dropdown : State -> Element
+dropdown : State -> Html
 dropdown state =
     case state.results of
-        Just result -> searchResults state.query result |> toElement 400 200
-        Nothing -> empty
+        Just result -> searchResults state.query result
+        Nothing -> Html.div [] []
 
 
 -- Hardcoded for now
