@@ -1,4 +1,4 @@
-module Component.SearchBar where
+module Component.Search where
 
 import Debug
 import List
