@@ -45,14 +45,14 @@ searchRequest query =
 -- VIEW
 
 view : State -> Element
-view state =
-    let dropdown =
-        case state.results of
-            Just result -> [ searchResults state.query result ]
-            Nothing -> []
-    in
-        Html.div [] ([ Html.text state.query, stringInput state.query ] ++ dropdown)
-        |> toElement 400 200
+view state = Html.div [] [ stringInput state.query ] |> toElement 400 30
+
+dropdown : State -> Element
+dropdown state =
+    case state.results of
+        Just result -> searchResults state.query result |> toElement 400 200
+        Nothing -> empty
+
 
 -- Hardcoded for now
 search : String -> List ModuleMatch
@@ -124,7 +124,7 @@ searchResults query matches =
 stringInput : String -> Html
 stringInput string =
     Html.input
-        [ placeholder "Text to reverse"
+        [ placeholder "Search..."
         , value string
         , Html.Events.on "input" Html.Events.targetValue (send searchbox)
         , myStyle
@@ -180,10 +180,9 @@ myStyle : Attribute
 myStyle =
     style [
       ("width", "100%")
-    , ("height", "40px")
-    , ("padding", "10px 0")
-    , ("font-size", "2em")
-    , ("text-align", "center")
+    , ("height", "20px")
+    , ("padding", "4px 5px")
+    , ("font-size", "1.2em")
     ]
 
 responseDecoder : Json.Decoder (List ModuleMatch)
