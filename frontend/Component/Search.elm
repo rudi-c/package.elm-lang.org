@@ -19,6 +19,10 @@ import String
 import Text
 --import VirtualDom (toElement)
 
+type SearchScope
+    = Package String
+    | Global
+
 type Action = SearchBoxNone
             | SearchBoxTyped String
             | SearchResultArrived (Http.Response String)
@@ -44,8 +48,8 @@ searchRequest query =
 
 -- VIEW
 
-view : State -> Element
-view state = Html.div [] [ stringInput state.query ] |> toElement 400 30
+searchBar : State -> Element
+searchBar state = Html.div [] [ stringInput state.query ] |> toElement 400 30
 
 dropdown : State -> Element
 dropdown state =
@@ -245,3 +249,6 @@ searchbox = channel ""
 
 searchSignal : Signal String
 searchSignal = subscribe searchbox
+
+searchState : Signal State
+searchState = foldp step initialState actions

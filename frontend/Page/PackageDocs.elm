@@ -14,6 +14,7 @@ import Signal
 import String
 import Window
 
+import Component.Search as Search
 import Component.TopBar as TopBar
 import Component.PackageDocs as Docs
 
@@ -78,7 +79,7 @@ extractReadme response =
 
 main : Signal Element
 main =
-    Signal.map4 view Window.dimensions description TopBar.topBar readme
+    Signal.map4 view Window.dimensions description Search.searchState readme
 
 
 versionChan : Signal.Channel String
@@ -92,11 +93,11 @@ port redirect =
     |> Signal.map packageUrl
 
 
-view : (Int,Int) -> Docs.PackageInfo -> Element -> Maybe String -> Element
-view (windowWidth, windowHeight) packages topBar readme =
+view : (Int,Int) -> Docs.PackageInfo -> Search.State -> Maybe String -> Element
+view (windowWidth, windowHeight) packages searchState readme =
   color C.background <|
   flow down
-  [ topBar
+  [ TopBar.viewWithSearchBar windowWidth (Search.searchBar searchState)
   , flow right
     [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
     , Docs.view (LC.create identity versionChan) 980 packages readme

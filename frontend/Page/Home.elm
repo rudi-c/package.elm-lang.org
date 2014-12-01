@@ -15,18 +15,17 @@ import Component.Packages as Packages
 
 main : Signal.Signal Element
 main =
-    Signal.map3 scene
+    Signal.map2 scene
                 Window.dimensions
                 (Signal.constant [Packages.Package "elm-lang/core" "core libraries" ["1.0.0"]])
-                TopBar.topBar
 
-scene : (Int,Int) -> List Packages.Package -> Element -> Element
-scene (windowWidth, windowHeight) packages topBar =
+scene : (Int,Int) -> List Packages.Package -> Element
+scene (windowWidth, windowHeight) packages =
   let packageListing =
         Packages.view 980 packages
   in
   color C.background <|
   flow down
-  [ topBar
+  [ TopBar.view windowWidth
   , container windowWidth (max windowHeight (heightOf packageListing)) midTop packageListing
   ]

@@ -9,6 +9,7 @@ import Signal
 import String
 import Window
 
+import Component.Search as Search
 import Component.TopBar as TopBar
 import Component.Packages as Packages
 
@@ -17,17 +18,16 @@ port title : String
 port title =
     "Elm Packages"
 
-
 main : Signal Element
 main =
-    Signal.map3 view Window.dimensions packages TopBar.topBar
+    Signal.map3 view Window.dimensions packages Search.searchState
 
 
-view : (Int,Int) -> List Packages.Package -> Element -> Element
-view (windowWidth, windowHeight) packages topBar =
+view : (Int,Int) -> List Packages.Package -> Search.State -> Element
+view (windowWidth, windowHeight) packages searchState =
   color C.background <|
   flow down
-  [ topBar
+  [ TopBar.viewWithSearchBar windowWidth (Search.searchBar searchState)
   , flow right
     [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
     , Packages.view 980 packages
