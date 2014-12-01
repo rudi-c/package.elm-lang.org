@@ -20,19 +20,14 @@ port title =
 
 main : Signal Element
 main =
-    Signal.map2 view Window.dimensions packages
+    Signal.map3 view Window.dimensions packages TopBar.topBar
 
 
-search : Signal.Channel TopBar.Update
-search =
-    Signal.channel TopBar.NoOp
-
-
-view : (Int,Int) -> List Packages.Package -> Element
-view (windowWidth, windowHeight) packages =
+view : (Int,Int) -> List Packages.Package -> Element -> Element
+view (windowWidth, windowHeight) packages topBar =
   color C.background <|
   flow down
-  [ TopBar.view windowWidth search (TopBar.Model TopBar.Global "map" TopBar.Normal)
+  [ topBar
   , flow right
     [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
     , Packages.view 980 packages

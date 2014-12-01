@@ -3,11 +3,17 @@ module Component.TopBar where
 import Color
 import ColorScheme as C
 import Graphics.Element (..)
+import Signal
 import Signal (..)
 import Text
+import Window
 
 import Component.SearchBar as SearchBar
 
+-- Model & Updates, based on Elm Architecture guide at
+-- https://gist.github.com/evancz/2b2ba366cae1887fe621
+
+-- Only one type of action right now, but this can be extended.
 type Action = SearchBar SearchBar.Action
 
 type alias State = { searchBar : SearchBar.State }
@@ -78,3 +84,6 @@ bar fillerWidth elem =
   , color C.mediumGrey (spacer fillerWidth 1)
   ]
 
+topBar : Signal Element
+topBar = Signal.map2 view (fst <~ Window.dimensions)
+                          (foldp step initialState actions)

@@ -78,12 +78,7 @@ extractReadme response =
 
 main : Signal Element
 main =
-    Signal.map3 view Window.dimensions description readme
-
-
-search : Signal.Channel TopBar.Update
-search =
-    Signal.channel TopBar.NoOp
+    Signal.map4 view Window.dimensions description TopBar.topBar readme
 
 
 versionChan : Signal.Channel String
@@ -97,11 +92,11 @@ port redirect =
     |> Signal.map packageUrl
 
 
-view : (Int,Int) -> Docs.PackageInfo -> Maybe String -> Element
-view (windowWidth, windowHeight) packages readme =
+view : (Int,Int) -> Docs.PackageInfo -> Element -> Maybe String -> Element
+view (windowWidth, windowHeight) packages topBar readme =
   color C.background <|
   flow down
-  [ TopBar.view windowWidth search (TopBar.Model TopBar.Global "map" TopBar.Normal)
+  [ topBar
   , flow right
     [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
     , Docs.view (LC.create identity versionChan) 980 packages readme

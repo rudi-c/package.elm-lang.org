@@ -68,12 +68,7 @@ handleResult response =
 
 main : Signal Element
 main =
-    Signal.map2 view Window.dimensions documentation
-
-
-search : Signal.Channel TopBar.Update
-search =
-    Signal.channel TopBar.NoOp
+    Signal.map3 view Window.dimensions documentation TopBar.topBar
 
 
 versionChan : Signal.Channel String
@@ -87,11 +82,11 @@ port redirect =
     |> Signal.map (\v -> packageUrl v ++ "/" ++ moduleNameToUrl context.moduleName)
 
 
-view : (Int,Int) -> D.Documentation -> Element
-view (windowWidth, windowHeight) docs =
+view : (Int,Int) -> D.Documentation -> Element -> Element
+view (windowWidth, windowHeight) docs topBar =
   color C.background <|
   flow down
-  [ TopBar.view windowWidth search (TopBar.Model TopBar.Global "map" TopBar.Normal)
+  [ topBar
   , flow right
     [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
     , Docs.view (LC.create identity versionChan) 980 context.user context.name context.version context.versionList docs
