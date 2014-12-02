@@ -18,7 +18,6 @@ import Signal (..)
 import String
 import Text
 import Keyboard
---import VirtualDom (toElement)
 
 type SearchScope
     = Package String
