@@ -1,18 +1,18 @@
 module Component.Search where
 
 import Debug
-import List
-import List (..)
 import Graphics.Element (..)
 import Graphics.Input as Input
 import Html
-import Html.Events
 import Html (Html, Attribute, toElement)
 import Html.Attributes (..)
+import Html.Events
 import Http
 import Http (Request)
 import Json.Decode as Json
 import Json.Decode ((:=))
+import List
+import List (..)
 import Signal
 import Signal (..)
 import String
@@ -28,26 +28,58 @@ type Action = SearchBoxNone
             | SearchResultArrived (Http.Response String)
             | Dimiss
 
--- State
-
 type alias State = { query: String, results: Maybe (List ModuleMatch) }
 
-initialState : State
-initialState = { query = "", results = Nothing }
-
+-- Encodes a search result coming down from the server.
 type alias ItemMatch = { item : String, boldRanges : List (Int, Int) }
 type alias ModuleMatch = { moduleName : String, boldRanges : List (Int, Int),
                            matches : List ItemMatch }
 
-searchRequest : String -> Request String
-searchRequest query =
-    if String.isEmpty query then
-        -- Request won't get sent with nil HTTP.
-        Http.get ""
-    else
-        Http.get <| "http://rudichen.me:9000/search/elm-lang-Elm/" ++ query ++ "?version=0.13"
+initialState : State
+initialState = { query = "", results = Nothing }
 
--- VIEW
+-- Signals/Actions
+
+-- ESC dismisses the search results if any.
+dimiss : Signal Action
+dimiss =
+    let escCode = 27
+    in
+        Keyboard.isDown escCode
+        |> Signal.keepIf identity True -- Only want key down events
+        |> Signal.map (\ _ -> Dimiss)
+
+searchInput : Channel String
+searchInput = channel ""
+
+searchSignal : Signal String
+searchSignal = subscribe searchInput
+
+actions : Signal Action
+actions =
+    let responses = Http.send (searchRequest <~ searchSignal)
+    in
+        mergeMany [ constant SearchBoxNone
+                  , SearchBoxTyped <~ searchSignal
+                  , SearchResultArrived <~ responses
+                  , dimiss
+                  ]
+
+-- Update
+
+step : Action -> State -> State
+step event state =
+    case event of
+        SearchBoxNone -> state
+        SearchBoxTyped text -> { state | query <- text }
+        SearchResultArrived results -> { state | results <- parseResults results }
+        Dimiss -> { state | results <- Nothing }
+
+searchState : Signal State
+searchState = foldp step initialState actions
+
+
+-- View
 
 searchBar : State -> Element
 searchBar state = Html.div [] [ stringInput state.query ] |> toElement 400 30
@@ -55,22 +87,12 @@ searchBar state = Html.div [] [ stringInput state.query ] |> toElement 400 30
 dropdown : State -> (Int, Int) -> Html
 dropdown state (x, y) =
     case state.results of
-        Just result -> Html.div [ listStyle x y ]
+        Just result -> Html.div [ dropdownStyle x y ]
                                 [ (searchResults state.query result) ]
         Nothing -> Html.div [] []
 
 
--- Hardcoded for now
-search : String -> List ModuleMatch
-search query = [ { moduleName = "Array", boldRanges = [],
-                   matches = [{ item = "filter", boldRanges = [(0,0), (2,3), (5,5)] }]
-                 },
-                 { moduleName = "List", boldRanges = [],
-                   matches = [{ item = "filter", boldRanges = [(0,0), (2,3), (5,5)] },
-                              { item = "filterMap", boldRanges = [(0,0), (2,3), (5,5)] }
-                             ]
-                 }
-               ]
+-- Build the HTML for the dropdown menu of results
 
 boldedTextHelper : String -> List (Int, Int) -> Int -> List Html
 boldedTextHelper string boldRanges currentIndex =
@@ -108,7 +130,7 @@ boldedItems match =
                    [ boldedText item.item item.boldRanges ]
     in
         -- ui-menu-item is to tag something as clickable
-        (List.map (\ match -> Html.li [ listItem2Style ] [boldedItem match])
+        (List.map (\ match -> Html.li [ resultItemStyle ] [boldedItem match])
              match.matches)
 
 searchResult : String -> ModuleMatch -> List Html
@@ -116,7 +138,7 @@ searchResult query match =
     let mainText =
             Html.a [ href match.moduleName, displayBlockStyle ]
                         [ boldedText match.moduleName match.boldRanges ]
-        main = Html.li [ listItemStyle] [ mainText ]
+        main = Html.li [ moduleItemStyle ] [ mainText ]
         rest = boldedItems match
     in
         main :: rest
@@ -125,28 +147,39 @@ searchResults : String -> List ModuleMatch -> Html
 searchResults query matches =
     Html.ul [ noPadding ] (matches |> List.map (searchResult query) |> concat)
 
-
 stringInput : String -> Html
 stringInput string =
     Html.input
         [ placeholder "Search..."
         , value string
-        , Html.Events.on "input" Html.Events.targetValue (send searchbox)
-        , myStyle
+        , Html.Events.on "input" Html.Events.targetValue (send searchInput)
+        , searchBarStyle
         ]
         []
 
-displayBlockStyle : Attribute
-displayBlockStyle = style [ ("display", "block") ]
+
+-- Styles
 
 makePx : Int -> String
 makePx int = toString int ++ "px"
 
+displayBlockStyle : Attribute
+displayBlockStyle = style [ ("display", "block") ]
+
 noPadding : Attribute
 noPadding = style [ ("padding", "0px"), ("margin", "0px") ]
 
-listStyle : Int -> Int -> Attribute
-listStyle x y =
+searchBarStyle : Attribute
+searchBarStyle =
+    style [
+      ("width", "100%")
+    , ("height", "20px")
+    , ("padding", "4px 5px")
+    , ("font-size", "1.2em")
+    ]
+
+dropdownStyle : Int -> Int -> Attribute
+dropdownStyle x y =
     style [
         ("position", "absolute"),
         ("background", "#ffffff"),
@@ -157,8 +190,8 @@ listStyle x y =
         ("width", "414px")
     ]
 
-listItemStyle : Attribute
-listItemStyle =
+moduleItemStyle  : Attribute
+moduleItemStyle  =
     style [
         ("display", "block"),
         ("padding", "4px 7px"),
@@ -172,8 +205,8 @@ listItemStyle =
         ("cursor", "pointer")
     ]
 
-listItem2Style : Attribute
-listItem2Style =
+resultItemStyle : Attribute
+resultItemStyle =
     style [
         ("display", "block"),
         ("padding", "4px 25px"),
@@ -187,14 +220,16 @@ listItem2Style =
         ("cursor", "pointer")
     ]
 
-myStyle : Attribute
-myStyle =
-    style [
-      ("width", "100%")
-    , ("height", "20px")
-    , ("padding", "4px 5px")
-    , ("font-size", "1.2em")
-    ]
+
+-- Querying the server for search results
+
+searchRequest : String -> Request String
+searchRequest query =
+    if String.isEmpty query then
+        -- Request won't get sent with nil HTTP.
+        Http.get ""
+    else
+        Http.get <| "http://rudichen.me:9000/search/elm-lang-Elm/" ++ query ++ "?version=0.13"
 
 responseDecoder : Json.Decoder (List ModuleMatch)
 responseDecoder =
@@ -217,10 +252,6 @@ responseDecoder =
     in
         Json.list modulesDecoder
 
-
-
--- Update
-
 parseResults : Http.Response String -> Maybe (List ModuleMatch)
 parseResults response =
     case response of
@@ -233,39 +264,15 @@ parseResults response =
                                          boldRanges = [], matches = [] }
                                       ]
 
-step : Action -> State -> State
-step event state =
-    case event of
-        SearchBoxNone -> state
-        SearchBoxTyped text -> { state | query <- text }
-        SearchResultArrived results -> { state | results <- parseResults results }
-        Dimiss -> { state | results <- Nothing }
-
-dimiss : Signal Action
-dimiss =
-    let escCode = 27
-    in
-        Keyboard.isDown escCode
-        |> Signal.keepIf identity True -- Only want key down events
-        |> Signal.map (\ _ -> Dimiss)
-
-actions : Signal Action
-actions =
-    let responses = Http.send (searchRequest <~ searchSignal)
-    in
-        mergeMany [ constant SearchBoxNone
-                  , SearchBoxTyped <~ searchSignal
-                  , SearchResultArrived <~ responses
-                  , dimiss
-                  ]
-
--- SIGNALS
-
-searchbox : Channel String
-searchbox = channel ""
-
-searchSignal : Signal String
-searchSignal = subscribe searchbox
-
-searchState : Signal State
-searchState = foldp step initialState actions
+-- This is a hardcoded search result which can be useful for testing,
+-- so I'm leaving it here.
+--search : String -> List ModuleMatch
+--search = [ { moduleName = "Array", boldRanges = [],
+--             matches = [{ item = "filter", boldRanges = [(0,0), (2,3), (5,5)] }]
+--           },
+--           { moduleName = "List", boldRanges = [],
+--             matches = [{ item = "filter", boldRanges = [(0,0), (2,3), (5,5)] },
+--                        { item = "filterMap", boldRanges = [(0,0), (2,3), (5,5)] }
+--                       ]
+--           }
+--         ]
