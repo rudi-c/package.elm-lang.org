@@ -17,6 +17,7 @@ import Signal
 import Signal (..)
 import String
 import Text
+import Keyboard
 --import VirtualDom (toElement)
 
 type SearchScope
@@ -26,6 +27,7 @@ type SearchScope
 type Action = SearchBoxNone
             | SearchBoxTyped String
             | SearchResultArrived (Http.Response String)
+            | Dimiss
 
 -- State
 
@@ -238,6 +240,15 @@ step event state =
         SearchBoxNone -> state
         SearchBoxTyped text -> { state | query <- text }
         SearchResultArrived results -> { state | results <- parseResults results }
+        Dimiss -> { state | results <- Nothing }
+
+dimiss : Signal Action
+dimiss =
+    let escCode = 27
+    in
+        Keyboard.isDown escCode
+        |> Signal.keepIf identity True -- Only want key down events
+        |> Signal.map (\ _ -> Dimiss)
 
 actions : Signal Action
 actions =
@@ -246,6 +257,7 @@ actions =
         mergeMany [ constant SearchBoxNone
                   , SearchBoxTyped <~ searchSignal
                   , SearchResultArrived <~ responses
+                  , dimiss
                   ]
 
 -- SIGNALS
