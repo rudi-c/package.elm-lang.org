@@ -75,9 +75,6 @@ step event state =
         SearchResultArrived results -> { state | results <- parseResults results }
         Dimiss -> { state | results <- Nothing }
 
-searchState : Signal State
-searchState = foldp step initialState actions
-
 
 -- View
 

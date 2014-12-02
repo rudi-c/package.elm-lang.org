@@ -14,9 +14,8 @@ import Signal
 import String
 import Window
 
-import Component.Search as Search
-import Component.TopBar as TopBar
 import Component.PackageDocs as Docs
+import Page.PageBuilder (PageBuilder, buildPages)
 
 
 port context : { user : String, name : String, version : String, versionList : List String }
@@ -79,8 +78,11 @@ extractReadme response =
 
 main : Signal Element
 main =
-    Signal.map4 view Window.dimensions description Search.searchState readme
+    buildPages (Signal.map2 pageBuilder description readme)
 
+pageBuilder : Docs.PackageInfo -> Maybe String -> PageBuilder
+pageBuilder packages readme (windowWidth, windowHeight) =
+    Docs.view (LC.create identity versionChan) 980 packages readme
 
 versionChan : Signal.Channel String
 versionChan =
@@ -92,14 +94,3 @@ port redirect =
   Signal.keepIf ((/=) "") "" (Signal.subscribe versionChan)
     |> Signal.map packageUrl
 
-
-view : (Int,Int) -> Docs.PackageInfo -> Search.State -> Maybe String -> Element
-view (windowWidth, windowHeight) packages searchState readme =
-  color C.background <|
-  flow down
-  [ TopBar.viewWithSearchBar windowWidth (Search.searchBar searchState)
-  , flow right
-    [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
-    , Docs.view (LC.create identity versionChan) 980 packages readme
-    ]
-  ]

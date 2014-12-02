@@ -7,12 +7,12 @@ import Html
 import Http
 import Json.Decode as Json
 import Signal
+import Signal (..)
 import String
 import Window
 
-import Component.Search as Search
-import Component.TopBar as TopBar
 import Component.Packages as Packages
+import Page.PageBuilder (PageBuilder, buildPages)
 
 
 port title : String
@@ -20,25 +20,11 @@ port title =
     "Elm Packages"
 
 main : Signal Element
-main =
-    Signal.map3 view Window.dimensions packages Search.searchState
+main = buildPages (pageBuilder <~ packages)
 
-
-view : (Int,Int) -> List Packages.Package -> Search.State -> Element
-view (windowWidth, windowHeight) packages searchState =
-    let test =
-        flow down
-            [ TopBar.viewWithSearchBar windowWidth (Search.searchBar searchState)
-            , flow right
-              [ spacer ((windowWidth - 980) // 2) (windowHeight - TopBar.topBarHeight)
-              , Packages.view 980 packages
-              ]
-            ]
-    in
-        Html.div [] [ color C.background test |> Html.fromElement
-                    , Search.dropdown searchState (TopBar.searchBarLeft windowWidth, 42)
-                    ]
-        |> Html.toElement windowWidth windowHeight
+pageBuilder : List Packages.Package -> PageBuilder
+pageBuilder packages (windowWidth, windowHeight) =
+    Packages.view 980 packages
 
 
 allPackagesUrl : String
